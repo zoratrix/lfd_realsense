@@ -1,0 +1,12 @@
+model:
+  weights: "perception/weights/best.pt"       # путь к обученным весам
+  conf_thresh: 0.4
+  iou_thresh: 0.45
+  device: "auto"                   # "cuda" / "cpu" / "auto"
+
+aruco:
+  marker_size_m: 0.04              # 4 см
+
+postprocessor:
+  circularity_threshold: 0.78
+  low_conf_threshold: 0.55

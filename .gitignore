@@ -1,0 +1,32 @@
+# Данные и демонстрации
+data/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+
+# Виртуальное окружение
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# Логи
+*.log
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb

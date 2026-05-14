@@ -1,0 +1,52 @@
+# =============================================================================
+# demos.yaml — метаданные демонстраций для LfD pipeline
+# =============================================================================
+# Этот файл содержит ТОЛЬКО:
+#   - пути к папкам с записями
+#   - object_class (что детектирует YOLO в первых кадрах — ground truth для проверки)
+#
+# action_sequence НЕ задаётся здесь. Он извлекается автоматически из видео:
+#   - COVER: детектируется появление крышки над объектом в depth/RGB
+#   - MOVE(container_N): финальное положение объекта относительно ArUco контейнеров
+#   - PASS: объект исчез из кадра, не попав ни в один контейнер
+#
+# Единственное что задаётся явно — технические параметры сенсора и маркеров.
+# =============================================================================
+
+global:
+  hand_marker_id: 10           # ArUco ID маркера на руке
+  container_ids: [1, 2, 3]     # ArUco ID контейнеров — для детекции, не для правил
+  aruco_dict: "DICT_4X4_50"
+  depth_scale: 0.001           # uint16 мм -> метры
+  fps_nominal: 30
+  alpha_frames: 30             # первые N кадров -> детекция объекта -> alpha(shape, color)
+
+demos:
+
+  - id: demo_cube_green
+    path: "data/demos/demo_cube_001"
+    object_class: cube_green    # ground truth для верификации YOLO-детекции
+
+  - id: demo_cube_blue
+    path: "data/demos/demo_cube_002"
+    object_class: cube_blue
+
+  - id: demo_cube_red
+    path: "data/demos/demo_cube_003"
+    object_class: cube_red
+
+  - id: demo_cup_silver
+    path: "data/demos/demo_cup_cover_001"
+    object_class: cup_silver
+
+  - id: demo_cup_dark_grey
+    path: "data/demos/demo_cup_cover_002"
+    object_class: cup_dark_grey
+
+  - id: demo_washer_green_0
+    path: "data/demos/demo_washer_001"
+    object_class: washer_green
+
+  - id: demo_washer_green_1
+    path: "data/demos/demo_washer_002"
+    object_class: washer_green
