@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 from .types import DetectedObject
+from .geometry import CameraIntrinsics, median_depth_raw, deproject
 
 class PostProcessor:
     """
@@ -80,29 +81,25 @@ class PostProcessor:
 
     def _get_center_3d(self, bbox, mask,
                         depth_frame: np.ndarray) -> np.ndarray | None:
-        """Берёт медианную глубину по маске или центру bbox."""
+        """Берёт медианную глубину по маске или патчу в центре bbox."""
         x, y, w, h = bbox
-        
-        if mask is not None:
-            # Глубина по пикселям маски
-            depth_values = depth_frame[mask & (depth_frame > 0)]
-        else:
-            # Патч 20% центра bbox
-            cx, cy = x + w // 2, y + h // 2
-            r = max(5, min(w, h) // 5)
-            patch = depth_frame[max(0, cy-r):cy+r, max(0, cx-r):cx+r]
-            depth_values = patch[patch > 0]
-        
-        if len(depth_values) < 5:
-            return None
-        
-        depth_m = np.median(depth_values) * self.depth_scale
-        
-        # Центр пикселя
         cx_px = x + w // 2
         cy_px = y + h // 2
-        intr = self.intrinsics
-        
-        X = (cx_px - intr.ppx) * depth_m / intr.fx
-        Y = (cy_px - intr.ppy) * depth_m / intr.fy
-        return np.array([X, Y, depth_m])
+
+        intr = CameraIntrinsics.from_rs(self.intrinsics, self.depth_scale)
+
+        if mask is not None:
+            # Глубина по всем валидным пикселям маски объекта
+            depth_values = depth_frame[mask & (depth_frame > 0)]
+            if len(depth_values) < 5:
+                return None
+            depth_raw = float(np.median(depth_values))
+        else:
+            # Маски нет — патч в центре bbox, радиус пропорционален размеру
+            radius = max(5, min(w, h) // 5)
+            depth_raw = median_depth_raw(depth_frame, cx_px, cy_px,
+                                         radius=radius, min_valid=5)
+            if depth_raw is None:
+                return None
+
+        return deproject(cx_px, cy_px, depth_raw, intr)

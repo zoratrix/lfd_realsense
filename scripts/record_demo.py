@@ -19,6 +19,7 @@ record_demo.py — запись демонстраций для LfD pipeline
 from __future__ import annotations
 
 import csv
+import json
 import threading
 import time
 from pathlib import Path
@@ -181,6 +182,11 @@ def record_demo(demo_name: str) -> Path:
     config.enable_stream(rs.stream.depth, STREAM_W, STREAM_H, rs.format.z16,  STREAM_FPS)
     pipeline.start(config)
 
+    profile = pipeline.get_active_profile()
+    color_stream = profile.get_stream(rs.stream.color)
+    intr = color_stream.as_video_stream_profile().get_intrinsics()
+    depth_scale = profile.get_device().first_depth_sensor().get_depth_scale()
+
     align     = rs.align(rs.stream.color)
     colorizer = rs.colorizer()
 
@@ -272,7 +278,14 @@ def record_demo(demo_name: str) -> Path:
         w = csv.DictWriter(f, fieldnames=["frame_idx","rgb_ts_ns","depth_ts_ns","system_ts_ns"])
         w.writeheader()
         w.writerows(timestamps)
-
+    with open(out_dir / "intrinsics.json", "w") as f:
+        json.dump({
+            "fx": intr.fx, "fy": intr.fy,
+            "ppx": intr.ppx, "ppy": intr.ppy,
+            "width": intr.width, "height": intr.height,
+            "depth_scale": depth_scale,
+            "coeffs": list(intr.coeffs), "model": str(intr.model),
+        }, f, indent=2)
     _make_video(rgb_dir, out_dir / "rgb.mp4")
     print(f"\n  ✓ Сохранено: {out_dir}  ({frame_idx} кадров)")
     return out_dir

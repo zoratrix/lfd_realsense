@@ -154,13 +154,18 @@ class CameraIntrinsics:
 
     @classmethod
     def from_realsense(cls, pipeline) -> "CameraIntrinsics":
-        """Берём intrinsics прямо с камеры (если pyrealsense2 доступен)."""
+        """
+        Берём intrinsics прямо с камеры.
+        Кадры выравниваются на color-поток (rs.align(rs.stream.color)),
+        поэтому параметры берутся у color-потока, а не у depth.
+        """
+        rs = __import__("pyrealsense2")
         profile = pipeline.get_active_profile()
-        depth_profile = profile.get_stream(
-            __import__("pyrealsense2").stream.depth
-        )
-        intr = depth_profile.as_video_stream_profile().get_intrinsics()
-        return cls(fx=intr.fx, fy=intr.fy, cx=intr.ppx, cy=intr.ppy)
+        color_profile = profile.get_stream(rs.stream.color)
+        intr = color_profile.as_video_stream_profile().get_intrinsics()
+        depth_scale = profile.get_device().first_depth_sensor().get_depth_scale()
+        return cls(fx=intr.fx, fy=intr.fy, cx=intr.ppx, cy=intr.ppy,
+                   depth_scale=depth_scale)
 
 
 def pixel_to_3d(

@@ -2,6 +2,8 @@ import cv2
 import numpy as np
 import logging
 
+from .geometry import CameraIntrinsics, pixel_to_3d
+
 logger = logging.getLogger(__name__)
 
 class ArucoTracker:
@@ -59,20 +61,12 @@ class ArucoTracker:
                       depth_frame: np.ndarray,
                       depth_scale: float,
                       intrinsics) -> np.ndarray | None:
-        """Деprojectирует пиксель (cx, cy) в 3D через depth."""
-        # Берём медиану по патчу 5×5 для устойчивости
-        patch = depth_frame[max(0, cy-2):cy+3, max(0, cx-2):cx+3]
-        valid = patch[patch > 0]
-        if len(valid) == 0:
-            return None
-        depth_m = np.median(valid) * depth_scale
-        
-        # Обратная проекция через параметры камеры
-        X = (cx - intrinsics.ppx) * depth_m / intrinsics.fx
-        Y = (cy - intrinsics.ppy) * depth_m / intrinsics.fy
-        Z = depth_m
-        return np.array([X, Y, Z])
-
+        """Обратная проекция центра маркера в 3D через карту глубины."""
+        intr = CameraIntrinsics.from_rs(intrinsics, depth_scale)
+        # Маркер плоский и малого размера — фиксированный патч 5x5 (radius=2)
+        return pixel_to_3d(cx, cy, depth_frame, intr,
+                           radius=2, min_valid=1)
+    
     def draw_debug(self, frame: np.ndarray) -> np.ndarray:
         out = frame.copy()
         if self._cache:
